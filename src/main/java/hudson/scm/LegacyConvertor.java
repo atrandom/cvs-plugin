@@ -76,7 +76,7 @@ public class LegacyConvertor {
         final String password = getPassword(cvsRoot);
         final List<CvsRepositoryItem> items = new ArrayList<CvsRepositoryItem>();
         items.add(new CvsRepositoryItem(location, modules.toArray(new CvsModule[modules.size()])));
-        repositories.add(new CvsRepository(cvsRoot, password != null, password, items, convertExcludedRegionsToList(excludedRegions), -1));
+        repositories.add(new CvsRepository(cvsRoot, password != null, password, items, convertExcludedRegionsToList(excludedRegions), -1, ""));
         return repositories;
     }
     

@@ -35,12 +35,15 @@ import hudson.util.ListBoxModel.Option;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.ArrayList;
 
 import org.jvnet.localizer.LocaleProvider;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -52,8 +55,8 @@ import org.netbeans.lib.cvsclient.CVSRoot;
 @ExportedBean
 public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implements Serializable {
 
-    private static final long serialVersionUID = -5137002480695525335L;
-    
+    private static final long serialVersionUID = 5490341074778188302L;
+
     private static final Map<Locale, ListBoxModel> compressionLevels = new HashMap<Locale, ListBoxModel>();
 
     private final String cvsRoot;
@@ -73,10 +76,12 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
     private transient CvsModule[] modules;
     // end legacy fields
 
+    private final String logEncoding;
+
     @DataBoundConstructor
     public CvsRepository(final String cvsRoot, final boolean passwordRequired, final String password,
                     final List<CvsRepositoryItem> repositoryItems, final List<ExcludedRegion> excludedRegions,
-                    final int compressionLevel) {
+                    final int compressionLevel, final String logEncoding) {
         this.cvsRoot = cvsRoot;
         this.repositoryItems = repositoryItems.toArray(new CvsRepositoryItem[repositoryItems.size()]);
         this.compressionLevel = compressionLevel;
@@ -89,6 +94,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
             this.password = null;
         }
         this.passwordRequired = passwordRequired;
+        this.logEncoding = fixEmpty(logEncoding);
     }
 
     @Exported
@@ -127,6 +133,26 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         return passwordRequired;
     }
 
+    @Exported
+    public String getLogEncoding() {
+        return logEncoding;
+    }
+
+    public Charset getLogEncodingCharset() {
+        if(logEncoding == null){
+            return Charset.defaultCharset();
+        } else {
+            try {
+                return Charset.forName(logEncoding);
+            } catch (IllegalCharsetNameException ex) {
+
+            } catch (UnsupportedCharsetException ex) {
+
+            }
+            return Charset.defaultCharset();
+        }
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -135,6 +161,7 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         result = prime * result + ((cvsRoot == null) ? 0 : cvsRoot.hashCode());
         result = prime * result + Arrays.hashCode(excludedRegions);
         result = prime * result + Arrays.hashCode(repositoryItems);
+        result = prime * result + ((logEncoding == null) ? 0 : logEncoding.hashCode());
         return result;
     }
 
@@ -166,6 +193,13 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         if (!Arrays.equals(repositoryItems, other.repositoryItems)) {
             return false;
         }
+        if(logEncoding == null) {
+            if(other.logEncoding != null) {
+                return false;
+            }
+        } else if (!logEncoding.equals(other.logEncoding)) {
+            return false;
+        }
         return true;
     }
 
@@ -192,6 +226,22 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
             return FormValidation.ok();
         }
         
+        public FormValidation doCheckLogEncoding(@QueryParameter String value) {
+            String v = fixEmpty(value);
+            if(v==null) {
+                return FormValidation.ok();
+            }
+            try {
+                Charset.forName(value);
+            } catch(IllegalCharsetNameException ex) {
+                return FormValidation.error("Unsupported Encoding");
+            } catch(UnsupportedCharsetException ex) {
+                return FormValidation.error("Unsupported Encoding");
+            }
+
+            return FormValidation.ok();
+        }
+
         private static Option option(String i) {
             return new Option(i,i);
         }
@@ -259,6 +309,6 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
             repositoryItems.add(new CvsRepositoryItem(entry.getKey(), entry.getValue().toArray(new CvsModule[entry.getValue().size()])));
         }
 
-        return new CvsRepository(cvsRoot, passwordRequired, null == password ? null : password.getPlainText(), repositoryItems, Arrays.asList(excludedRegions), compressionLevel);
+        return new CvsRepository(cvsRoot, passwordRequired, null == password ? null : password.getPlainText(), repositoryItems, Arrays.asList(excludedRegions), compressionLevel, "");
     }
 }

@@ -40,7 +40,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
         CvsRepository repository = new CvsRepository(
                         ":local:/Users/Shared/cvs", false, null,
                         Arrays.asList(new CvsRepositoryItem[] {item}),
-                        new ArrayList<ExcludedRegion>(), -1);
+                        new ArrayList<ExcludedRegion>(), -1, "UTF-8");
         assertEquals("adding in a test file", new StringCvsLog(logContents)
                         .mapCvsLog(repository, item, module, new EnvVars())
                         .getChanges().get(0).getMsg());
@@ -54,7 +54,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
 
         CvsModule module = new CvsModule("portalInt", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation("d-chg00017366_op_brc_prod-op-2012-04-19", false), new CvsModule[]{module});
-        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/usr/local/cvs/repcvs/", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
+        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/usr/local/cvs/repcvs/", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1, "UTF-8");
         CvsChangeSet cvsChangeSet = new StringCvsLog(logContents).mapCvsLog(repository, item, module, new EnvVars());
         assertEquals(4, cvsChangeSet.getChanges().size());
     }
@@ -67,7 +67,7 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
 
         CvsModule module = new CvsModule("branch2", null);
         CvsRepositoryItem item = new CvsRepositoryItem(new CvsRepositoryLocation.BranchRepositoryLocation(/*"d-chg00017366_op_brc_prod-op-2012-04-19"*/ "branch2", false), new CvsModule[]{module});
-        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/homepages/25/d83630321/htdocs/cvs", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1);
+        CvsRepository repository = new CvsRepository(":pserver:user:password@host:port:/homepages/25/d83630321/htdocs/cvs", false, null, Arrays.asList(new CvsRepositoryItem[]{item}), new ArrayList<ExcludedRegion>(), -1, "UTF-8");
         CvsChangeSet set = new StringCvsLog(logContents).mapCvsLog(repository, item, module, new EnvVars());
         assertEquals(3, set.getChanges().size());
     }
@@ -87,3 +87,4 @@ public class CvsChangeLogHelperTest extends HudsonTestCase {
         }
     }
 }
+

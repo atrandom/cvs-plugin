@@ -46,6 +46,7 @@ import hudson.util.Secret;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -91,7 +92,10 @@ import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 import org.netbeans.lib.cvsclient.connection.Connection;
 import org.netbeans.lib.cvsclient.connection.ConnectionFactory;
 import org.netbeans.lib.cvsclient.connection.ConnectionIdentity;
+import org.netbeans.lib.cvsclient.event.CVSAdapter;
 import org.netbeans.lib.cvsclient.event.CVSListener;
+import org.netbeans.lib.cvsclient.event.EnhancedMessageEvent;
+import org.netbeans.lib.cvsclient.event.MessageEvent;
 
 /**
  * CVS.
@@ -515,10 +519,30 @@ public class CVSSCM extends SCM implements Serializable {
         // can then parse it from here
         final File tmpRlogSpill = File.createTempFile("cvs","rlog");
         final DeferredFileOutputStream outputStream = new DeferredFileOutputStream(100*1024,tmpRlogSpill);
-        final PrintStream logStream = new PrintStream(outputStream);
+        final PrintStream logStream = new PrintStream(outputStream, false, "UTF-8");
 
         // set a listener with our output stream that we parse the log from
-        final CVSListener basicListener = new BasicListener(logStream, errorStream);
+        final CVSListener basicListener = new CVSAdapter(){
+            private final StringBuffer taggedLine = new StringBuffer();
+           @Override
+           public void messageSent(final MessageEvent e) {
+               final String line = e.getRawData() != null ? new String(e.getRawData(), repository.getLogEncodingCharset()) : e.getMessage();
+               if (e instanceof EnhancedMessageEvent) {
+                   return;
+               }
+               final PrintStream stream = e.isError() ? errorStream : logStream;
+
+               if (e.isTagged()) {
+                   final String message = MessageEvent.parseTaggedMessage(taggedLine, e.getMessage());
+                   if (message != null) {
+                       stream.println(message);
+                   }
+               } else {
+                   stream.println(line);
+               }
+           }
+        };
+
         cvsClient.getEventManager().addCVSListener(basicListener);
 
         // log the command to the current run/polling log
@@ -550,12 +574,10 @@ public class CVSSCM extends SCM implements Serializable {
         return new CvsLog() {
             @Override
             public Reader read() throws IOException {
-                // TODO: is it really correct that we read this in the platform encoding?
-                // note that master and slave can have different platform encoding
                 if (outputStream.isInMemory())
-                    return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()));
+                    return new InputStreamReader(new ByteArrayInputStream(outputStream.getData()), "UTF-8");
                 else
-                    return new FileReader(outputStream.getFile());
+                    return new InputStreamReader(new FileInputStream(outputStream.getFile()), "UTF-8");
             }
 
             @Override

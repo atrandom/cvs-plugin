@@ -43,6 +43,9 @@ THE SOFTWARE.
       <f:entry title="${%Compression Level}" field="compressionLevel">
         <f:select/>
       </f:entry>
+      <f:entry  title="log encoding" field="logEncoding">
+        <f:textbox/>
+      </f:entry>
     </f:section>
   </f:advanced>
   <f:entry>

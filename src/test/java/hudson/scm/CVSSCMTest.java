@@ -47,7 +47,7 @@ public class CVSSCMTest extends HudsonTestCase {
         repositories[0] = new CvsRepository("cvsroot", false, null, Arrays.asList(new CvsRepositoryItem[]{item}),
                         Arrays.asList(new ExcludedRegion[] {
                                         new ExcludedRegion("excludedRegions"),
-                                        new ExcludedRegion("region2") }), -1);
+                                        new ExcludedRegion("region2") }), -1, "");
 
         @SuppressWarnings("deprecation")
         CVSSCM scm1 = new CVSSCM("cvsroot", "module1 module2 module\\ 3", "",

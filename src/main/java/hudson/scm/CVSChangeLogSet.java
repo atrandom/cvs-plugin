@@ -150,7 +150,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
      */
     public static class CVSChangeLog extends ChangeLogSet.Entry {
         private static final DateFormat CHANGE_DATE_FORMATTER = new SimpleDateFormat(
-                        "yyyy-MM-dd HH:mm:ss");
+                        "yyyy/MM/dd HH:mm:ss");
         private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
                         "yyyy-MM-dd");
         private static final DateFormat TIME_FORMATTER = new SimpleDateFormat(
@@ -688,7 +688,7 @@ public final class CVSChangeLogSet extends ChangeLogSet<CVSChangeLog> {
     }
 
     public void toFile(final java.io.File changelogFile) throws IOException {
-        PrintStream output = new PrintStream(new FileOutputStream(changelogFile));
+        PrintStream output = new PrintStream(new FileOutputStream(changelogFile), false, "UTF-8");
 
         DateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
