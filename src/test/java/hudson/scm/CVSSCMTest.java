@@ -2,14 +2,15 @@ package hudson.scm;
 
 import hudson.model.FreeStyleProject;
 import hudson.scm.browsers.ViewCVS;
-
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.util.Arrays;
-
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.Email;
 import org.jvnet.hudson.test.HudsonTestCase;
+
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -67,7 +68,10 @@ public class CVSSCMTest extends HudsonTestCase {
     public void testGlobalConfigRoundtrip() throws Exception {
         CVSSCM.DescriptorImpl d = hudson
                         .getDescriptorByType(CVSSCM.DescriptorImpl.class);
-        d.setCompressionLevel(1);
+        
+        Field field = d.getClass().getDeclaredField("compressionLevel");
+        field.setAccessible(true);
+        field.setInt(d, 1);
 
         submit(createWebClient().goTo("configure").getFormByName("config"));
         assertEquals(1, d.getCompressionLevel());
@@ -104,5 +108,23 @@ public class CVSSCMTest extends HudsonTestCase {
         new WebClient().goTo(p.getUrl() + "api/xml", "application/xml");
         new WebClient().goTo(p.getUrl() + "api/xml?depth=999",
                         "application/xml");
+    }
+    
+    @Bug(14141)
+    public void testFlattenEnabled() {
+        List<CvsRepository> repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
+                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName")})), new ArrayList<ExcludedRegion>(), 3, "UTF-8"));
+        CVSSCM scm = new CVSSCM(repositories, false, false, null, false, false, false, false, false);
+        assertFalse(scm.isLegacy());
+
+        scm = new CVSSCM(repositories, false, true, null, false, false, false, false, false);
+        assertTrue(scm.isLegacy());
+
+        repositories = Arrays.asList(new CvsRepository("cvsroot", false, null,
+                Arrays.asList(new CvsRepositoryItem(new CvsRepositoryLocation.HeadRepositoryLocation(), new CvsModule[]{new CvsModule("remoteName", "localName"), new CvsModule("remoteName2", "localName2")})), new ArrayList<ExcludedRegion>(), 3, "UTF-8"));
+
+        scm = new CVSSCM(repositories, false, false, null, false, false, false, false, false);
+        assertTrue(scm.isLegacy());
+
     }
 }

@@ -38,12 +38,12 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ArrayList;
 
 import org.jvnet.localizer.LocaleProvider;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -55,8 +55,8 @@ import org.netbeans.lib.cvsclient.CVSRoot;
 @ExportedBean
 public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implements Serializable {
 
-    private static final long serialVersionUID = 5490341074778188302L;
-
+    private static final long serialVersionUID = -5137002480695525335L;
+    
     private static final Map<Locale, ListBoxModel> compressionLevels = new HashMap<Locale, ListBoxModel>();
 
     private final String cvsRoot;
@@ -135,23 +135,23 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
 
     @Exported
     public String getLogEncoding() {
-        return logEncoding;
+         return logEncoding;
     }
 
     public Charset getLogEncodingCharset() {
         if(logEncoding == null){
-            return Charset.defaultCharset();
-        } else {
-            try {
-                return Charset.forName(logEncoding);
-            } catch (IllegalCharsetNameException ex) {
+                return Charset.defaultCharset();
+            } else {
+                try {
+                    return Charset.forName(logEncoding);
+                } catch (IllegalCharsetNameException ex) {
 
-            } catch (UnsupportedCharsetException ex) {
+                } catch (UnsupportedCharsetException ex) {
 
+                }
+                return Charset.defaultCharset();
             }
-            return Charset.defaultCharset();
         }
-    }
 
     @Override
     public int hashCode() {
@@ -227,19 +227,18 @@ public class CvsRepository extends AbstractDescribableImpl<CvsRepository> implem
         }
         
         public FormValidation doCheckLogEncoding(@QueryParameter String value) {
-            String v = fixEmpty(value);
-            if(v==null) {
-                return FormValidation.ok();
-            }
-            try {
-                Charset.forName(value);
-            } catch(IllegalCharsetNameException ex) {
-                return FormValidation.error("Unsupported Encoding");
-            } catch(UnsupportedCharsetException ex) {
-                return FormValidation.error("Unsupported Encoding");
-            }
-
-            return FormValidation.ok();
+        	String v = fixEmpty(value);
+        	if(v==null) {
+        		return FormValidation.ok();
+        	}
+        	try {
+        		Charset.forName(value);
+        	} catch(IllegalCharsetNameException ex) {
+        		return FormValidation.error("Unsupported Encoding");
+        	} catch(UnsupportedCharsetException ex) {
+        		return FormValidation.error("Unsupported Encoding");
+        	}
+        	return FormValidation.ok();
         }
 
         private static Option option(String i) {

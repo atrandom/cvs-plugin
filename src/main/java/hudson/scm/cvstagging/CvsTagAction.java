@@ -23,40 +23,35 @@
  */
 package hudson.scm.cvstagging;
 
-import static hudson.Util.fixNull;
-import hudson.model.Describable;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.scm.CVSSCM;
-import hudson.scm.CvsRevisionState;
+import hudson.model.*;
+import hudson.scm.AbstractCvs;
 import hudson.scm.AbstractScmTagAction;
+import hudson.scm.CvsRevisionState;
 import hudson.scm.SCM;
 import hudson.scm.cvs.Messages;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletException;
-
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static hudson.Util.fixNull;
+
 @ExportedBean
 public class CvsTagAction extends AbstractScmTagAction implements Describable<CvsTagAction> {
 
     private final List<String> tagNames = new ArrayList<String>();
-    private final CVSSCM parent;
+    private final AbstractCvs parent;
 
-    public CvsTagAction(final AbstractBuild<?, ?> build, final CVSSCM parent) {
+    public CvsTagAction(final AbstractBuild<?, ?> build, final AbstractCvs parent) {
         super(build);
         this.parent = parent;
     }
@@ -97,7 +92,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         return tagNames.toArray(new String[tagNames.size()]);
     }
     
-    public CVSSCM getParent() {
+    public AbstractCvs getParent() {
         return parent;
     }
 
@@ -112,6 +107,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
         if (!checkTagName(tagName)) {
             sendError(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
         }
+        final boolean moveTag = Boolean.parseBoolean(request.getParameter("moveTag"));
 
         // handle upstream tagging
         if (null != request.getParameter("upstream")) {
@@ -123,19 +119,20 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
                 if (!checkTagName(upstreamTagName)) {
                     sendError(Messages.CVSSCM_TagNameInvalid(Messages.CVSSCM_Tag()));
                 }
+                boolean upstreamMoveTag = Boolean.parseBoolean(request.getParameter("upstream-moveTag." + project.getName()));
                 CvsTagAction action = project.getBuildByNumber(upstream.get(project)).getAction(CvsTagAction.class);
                 if (null != action) {
-                    action.perform(upstreamTagName, upstreamCreateBranch);
+                    action.perform(upstreamTagName, upstreamCreateBranch, upstreamMoveTag);
                 }
             }
         }
 
-        perform(tagName, createBranch);
+        perform(tagName, createBranch, moveTag);
 
         doIndex(request, response);
     }
 
-    public void perform(final String tagName, boolean createTag) throws IOException {
+    public void perform(final String tagName, boolean createTag, boolean moveTag) throws IOException {
         if (getBuild().hasPermission(Permission.UPDATE)) {
             getBuild().keepLog(true);
         }
@@ -145,7 +142,7 @@ public class CvsTagAction extends AbstractScmTagAction implements Describable<Cv
             return;
         }
 
-        new CvsTagActionWorker(state, tagName, createTag, getBuild(), this).start();
+        new CvsTagActionWorker(state, tagName, createTag, getBuild(), this, moveTag).start();
 
         synchronized (this) {
             tagNames.add(tagName);

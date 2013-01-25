@@ -1,14 +1,12 @@
 package hudson.scm.cvstagging;
 
-import java.io.IOException;
-
+import hudson.model.AbstractBuild;
 import hudson.model.TaskListener;
 import hudson.model.TaskThread;
-import hudson.model.AbstractBuild;
+import hudson.scm.AbstractCvs;
 import hudson.scm.CvsFile;
 import hudson.scm.CvsRepository;
 import hudson.scm.CvsRevisionState;
-
 import org.netbeans.lib.cvsclient.Client;
 import org.netbeans.lib.cvsclient.command.CommandAbortedException;
 import org.netbeans.lib.cvsclient.command.CommandException;
@@ -17,6 +15,8 @@ import org.netbeans.lib.cvsclient.command.tag.RtagCommand;
 import org.netbeans.lib.cvsclient.commandLine.BasicListener;
 import org.netbeans.lib.cvsclient.connection.AuthenticationException;
 
+import java.io.IOException;
+
 public class CvsTagActionWorker extends TaskThread {
 
     private final CvsRevisionState revisionState;
@@ -24,24 +24,28 @@ public class CvsTagActionWorker extends TaskThread {
     private final AbstractBuild<?, ?> build;
     private final CvsTagAction parent;
     private final boolean createBranch;
+    private final boolean moveTag;
 
     @SuppressWarnings("deprecation") // use a deprecated method, so we can support as many versions of Jenkins as possible
     public CvsTagActionWorker(final CvsRevisionState revisionState,
-                    final String tagName, final boolean createBranch, final AbstractBuild<?, ?> build, final CvsTagAction parent) {
+                    final String tagName, final boolean createBranch, final AbstractBuild<?, ?> build,
+                    final CvsTagAction parent, final boolean moveTag) {
         super(parent, ListenerAndText.forMemory());
         this.revisionState = revisionState;
         this.tagName = tagName;
         this.build = build;
         this.parent = parent;
         this.createBranch = createBranch;
+        this.moveTag = moveTag;
     }
 
     @Override
-    protected void perform(final TaskListener listener) throws Exception {
+    public void perform(final TaskListener listener) throws IOException, InterruptedException, CommandException, AuthenticationException {
         for (CvsRepository repository : revisionState.getModuleFiles().keySet()) {
             for (CvsFile file : revisionState.getModuleState(repository)) {
-                final Client cvsClient = parent.getParent().getCvsClient(repository, build.getEnvironment(listener));
-                final GlobalOptions globalOptions = parent.getParent().getGlobalOptions(repository, build.getEnvironment(listener));
+                AbstractCvs owner = parent.getParent();
+                final Client cvsClient = owner.getCvsClient(repository, build.getEnvironment(listener), listener);
+                final GlobalOptions globalOptions = owner.getGlobalOptions(repository, build.getEnvironment(listener));
 
                 globalOptions.setCVSRoot(repository.getCvsRoot());
 
@@ -51,6 +55,7 @@ public class CvsTagActionWorker extends TaskThread {
                 rtagCommand.setTagByRevision(file.getRevision());
                 rtagCommand.addModule(file.getName());
                 rtagCommand.setMakeBranchTag(createBranch);
+                rtagCommand.setOverrideExistingTag(moveTag);
                 cvsClient.getEventManager().addCVSListener(
                                 new BasicListener(listener.getLogger(),
                                                 listener.getLogger()));
